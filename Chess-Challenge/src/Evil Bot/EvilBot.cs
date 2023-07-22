@@ -13,7 +13,7 @@ namespace ChessChallenge.Example
         public Move Think(Board board, Timer timer)
         {
             Move[] allMoves = board.GetLegalMoves();
-
+            int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
             // Pick a random move to play if nothing better is found
             Random rng = new();
             Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
@@ -31,6 +31,28 @@ namespace ChessChallenge.Example
                 // Find highest value capture
                 Piece capturedPiece = board.GetPiece(move.TargetSquare);
                 int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
+
+                board.MakeMove(move);
+                var opponentMoves = board.GetLegalMoves();
+                var opponentBestMove = 0;
+                foreach (var opponentMove in opponentMoves)
+                {
+                    if (MoveIsCheckmate(board, opponentMove))
+                    {
+                        opponentBestMove = 100000;
+                    }
+
+                    Piece myCapturedPiece = board.GetPiece(opponentMove.TargetSquare);
+                    int myCapturedPieceValue = pieceValues[(int)myCapturedPiece.PieceType];
+
+                    if (myCapturedPieceValue > opponentBestMove)
+                    {
+                        opponentBestMove = myCapturedPieceValue;
+                    }
+                }
+
+                capturedPieceValue -= opponentBestMove;
+                board.UndoMove(move);
 
                 if (capturedPieceValue > highestValueCapture)
                 {

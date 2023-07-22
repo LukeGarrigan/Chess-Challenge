@@ -21,9 +21,6 @@ public class MyBot : IChessBot
                 break;
             }
 
-      
-            
-
             // Find highest value capture
             Piece capturedPiece = board.GetPiece(move.TargetSquare);
             int capturedPieceValue = pieceValues[(int)capturedPiece.PieceType];
