@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Data;
 using System.Linq;
-using System.Runtime.InteropServices;
 using ChessChallenge.API;
 
 public class MyBot : IChessBot
@@ -9,7 +7,6 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
         Move[] allMoves = board.GetLegalMoves();
-        // Pick a random move to play if nothing better is found
         Random rng = new();
         Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
 
@@ -19,7 +16,7 @@ public class MyBot : IChessBot
         {
             board.MakeMove(move);
         
-            var moveScore = Search(board, 4, Int32.MinValue, Int32.MaxValue);
+            var moveScore = Search(board, 4, int.MinValue, int.MaxValue);
             if (moveScore > best)
             {
                 best = moveScore;
@@ -44,30 +41,25 @@ public class MyBot : IChessBot
 
         if (!moves.Any())
         {
-            if (board.IsInCheckmate())
-            {
-                return Int32.MinValue;
-            }
-
-            return 0;
+            return board.IsInCheckmate() ? int.MinValue : 0;
         }
 
         foreach (var move in moves)
         {
             board.MakeMove(move);
-            int evaluation = -Search(board, depth - 1, -beta, -alpha);
+            int score = -Search(board, depth - 1, -beta, -alpha);
             board.UndoMove(move);
-            if (evaluation >= beta)
+
+            if (score >= beta)
             {
                 // move was too good, opponent will avoid this position
                 return beta;
             }
 
-            alpha = Math.Max(alpha, evaluation);
+            alpha = Math.Max(alpha, score);
         }
 
         return alpha;
-
     }
 
     private int Evaluate(Board board)
@@ -79,14 +71,14 @@ public class MyBot : IChessBot
 
         foreach (var pieceList in pieceLists)
         {
-            var pieceValue = pieceValues[(int)pieceList.TypeOfPieceInList];
+            var piecesValue = pieceValues[(int)pieceList.TypeOfPieceInList] * pieceList.Count;
             if (pieceList.IsWhitePieceList)
             {
-                whites += pieceList.Count() * pieceValue;
+                whites += piecesValue;
             }
             else
             {
-                blacks += pieceList.Count() * pieceValue;
+                blacks += piecesValue;
             }
         }
 
