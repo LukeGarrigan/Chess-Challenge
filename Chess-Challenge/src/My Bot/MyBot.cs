@@ -18,9 +18,9 @@ public class MyBot : IChessBot
         foreach (var move in allMoves)
         {
             board.MakeMove(move);
-
-            var moveScore = MiniMax(board, 2, true);
-            if (moveScore >= best)
+        
+            var moveScore = Search(board, 4, Int32.MinValue, Int32.MaxValue);
+            if (moveScore > best)
             {
                 best = moveScore;
                 moveToPlay = move;
@@ -33,48 +33,50 @@ public class MyBot : IChessBot
     }
 
 
-    public int MiniMax(Board board, int depth, bool maximizingPlayer)
+    public int Search(Board board, int depth, int alpha, int beta)
     {
         if (depth == 0)
         {
-            return EvaluateBoard(board, board.IsWhiteToMove);
+            return Evaluate(board);
         }
 
-        if (maximizingPlayer)
-        {
-            var value = -Int32.MaxValue;
-            var moves = board.GetLegalMoves();
+        var moves = board.GetLegalMoves();
 
-            foreach (var move in moves)
+        if (!moves.Any())
+        {
+            if (board.IsInCheckmate())
             {
-                board.MakeMove(move);
-                value = Math.Max(value, MiniMax(board, depth - 1, false));
-                board.UndoMove(move);
+                return Int32.MinValue;
             }
 
-            return value;
+            return 0;
         }
-        else
+
+        foreach (var move in moves)
         {
-            var value = Int32.MaxValue;
-            var moves = board.GetLegalMoves();
-            foreach (var move in moves)
+            board.MakeMove(move);
+            int evaluation = -Search(board, depth - 1, -beta, -alpha);
+            board.UndoMove(move);
+            if (evaluation >= beta)
             {
-                board.MakeMove(move);
-                value = Math.Min(value, MiniMax(board, depth - 1, true));
-                board.UndoMove(move);
+                // move was too good, opponent will avoid this position
+                return beta;
             }
 
-            return value;
+            alpha = Math.Max(alpha, evaluation);
         }
+
+        return alpha;
+
     }
 
-    private int EvaluateBoard(Board board, bool isWhite)
-    {       
+    private int Evaluate(Board board)
+    {
         int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
         var pieceLists = board.GetAllPieceLists();
         var whites = 0;
         var blacks = 0;
+
         foreach (var pieceList in pieceLists)
         {
             var pieceValue = pieceValues[(int)pieceList.TypeOfPieceInList];
@@ -88,24 +90,6 @@ public class MyBot : IChessBot
             }
         }
 
-        
-        if(isWhite)
-        {
-            return whites - blacks;
-        }
-        else
-        {
-            return blacks - whites;
-        }
-    }
-
-
-    // Test if this move gives checkmate
-    bool MoveIsCheckmate(Board board, Move move)
-    {
-        board.MakeMove(move);
-        bool isMate = board.IsInCheckmate();
-        board.UndoMove(move);
-        return isMate;
+        return (whites - blacks) * (board.IsWhiteToMove ? 1 : -1);
     }
 }
