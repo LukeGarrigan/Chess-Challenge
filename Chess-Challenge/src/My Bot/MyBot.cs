@@ -4,6 +4,7 @@ using ChessChallenge.API;
 
 public class MyBot : IChessBot
 {
+    private  int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
     public Move Think(Board board, Timer timer)
     {
         Move[] allMoves = board.GetLegalMoves();
@@ -11,12 +12,15 @@ public class MyBot : IChessBot
         Move moveToPlay = allMoves[rng.Next(allMoves.Length)];
 
         var best = Int32.MinValue;
-        
-        foreach (var move in allMoves)
+
+
+        var captureMoves = board.GetLegalMoves(true);
+        captureMoves = captureMoves.OrderByDescending(a => a.CapturePieceType).ToArray();
+        foreach (var move in captureMoves)
         {
             board.MakeMove(move);
         
-            var moveScore = Search(board, 4, int.MinValue, int.MaxValue);
+            var moveScore = Search(board, 1, int.MinValue, int.MaxValue);
             if (moveScore > best)
             {
                 best = moveScore;
@@ -37,14 +41,20 @@ public class MyBot : IChessBot
             return Evaluate(board);
         }
 
-        var moves = board.GetLegalMoves();
+        if (board.IsInCheckmate())
+        {
+            return int.MinValue;
+        }
 
+        var moves = board.GetLegalMoves();
+        var captureMoves = board.GetLegalMoves(true);
+        captureMoves = captureMoves.OrderByDescending(a => a.CapturePieceType).ToArray();
         if (!moves.Any())
         {
             return board.IsInCheckmate() ? int.MinValue : 0;
         }
 
-        foreach (var move in moves)
+        foreach (var move in captureMoves)
         {
             board.MakeMove(move);
             int score = -Search(board, depth - 1, -beta, -alpha);
@@ -52,7 +62,6 @@ public class MyBot : IChessBot
 
             if (score >= beta)
             {
-                // move was too good, opponent will avoid this position
                 return beta;
             }
 
@@ -64,7 +73,7 @@ public class MyBot : IChessBot
 
     private int Evaluate(Board board)
     {
-        int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+      
         var pieceLists = board.GetAllPieceLists();
         var whites = 0;
         var blacks = 0;
